@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { CalendarClock, FilePlus2, Map, Send, Truck } from 'lucide-react'
+import { useState } from 'react'
 import Swal from 'sweetalert2'
 import { Button } from '@/shared/components/Button'
 import { Card } from '@/shared/components/Card'
+import { Modal } from '@/shared/components/Modal'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import { vmiService } from '@/shared/api/vmiService'
@@ -17,6 +19,7 @@ const shipmentStatuses = [
 ]
 
 export const ShipmentsPage = () => {
+  const [isShipmentModalOpen, setIsShipmentModalOpen] = useState(false)
   const { data = [] } = useQuery({
     queryKey: ['shipments'],
     queryFn: vmiService.getShipments,
@@ -28,13 +31,17 @@ export const ShipmentsPage = () => {
       title: 'Surat pengiriman diterbitkan',
       text: shipmentNo,
     })
+    setIsShipmentModalOpen(false)
   }
 
   return (
     <div>
       <PageHeader
         actions={
-          <Button icon={<FilePlus2 className="h-4 w-4" />}>
+          <Button
+            icon={<FilePlus2 className="h-4 w-4" />}
+            onClick={() => setIsShipmentModalOpen(true)}
+          >
             Terbit Surat Pengiriman
           </Button>
         }
@@ -42,7 +49,7 @@ export const ShipmentsPage = () => {
         title="Pengiriman Material"
       />
 
-      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-5">
         <Card className="overflow-hidden">
           <div className="border-b border-pln-line p-5">
             <h2 className="text-lg font-black text-pln-ink">
@@ -92,7 +99,7 @@ export const ShipmentsPage = () => {
                     <td className="px-5 py-4">
                       <Button
                         className="min-h-9 px-3"
-                        onClick={() => handleIssueLetter(shipment.shipmentNo)}
+                        onClick={() => setIsShipmentModalOpen(true)}
                         variant="secondary"
                       >
                         Surat Jalan
@@ -104,44 +111,67 @@ export const ShipmentsPage = () => {
             </table>
           </div>
         </Card>
-
-        <Card className="p-5">
-          <div className="flex items-center gap-3">
-            <Send className="h-5 w-5 text-pln-blue" />
-            <h2 className="text-lg font-black text-pln-ink">
-              Form Terbit Surat Pengiriman
-            </h2>
-          </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {[
-              ['No. Pengiriman', 'Auto Generate'],
-              ['No. Pemesanan', 'ORD/VMI/2026/0001'],
-              ['Pengirim', 'PT. PLN Nusa Daya'],
-              ['Unit Pemesan', 'UP3 Sulselrabar'],
-              ['Unit Penerima', 'ULP Makassar Timur'],
-              ['Jadwal Pengiriman', '2026-05-21'],
-              ['Estimasi Tiba', '2026-05-21'],
-              ['Kilometer Perjalanan', '18 km'],
-              ['Moda Transportasi', 'Truk Box'],
-              ['No. Plat Kendaraan', 'DD 8401 ND'],
-              ['Driver/Pengemudi', 'Irfan Saputra'],
-              ['Upload Surat Jalan', 'surat-jalan.pdf'],
-            ].map(([label, value]) => (
-              <label className="block" key={label}>
-                <span className="text-xs font-black uppercase text-pln-muted">
-                  {label}
-                </span>
-                <input
-                  className="focus-ring mt-2 h-10 w-full rounded-lg border border-pln-line px-3 text-sm outline-none read-only:bg-slate-50"
-                  defaultValue={value}
-                  readOnly={['No. Pengiriman', 'Pengirim', 'Unit Pemesan', 'Unit Penerima', 'Kilometer Perjalanan'].includes(label)}
-                />
-              </label>
-            ))}
-          </div>
-          <Button className="mt-5 w-full">Simpan Surat Pengiriman</Button>
-        </Card>
       </div>
+
+      <Modal
+        description="Terbitkan surat jalan dengan jadwal, estimasi tiba, armada, driver, dan dokumen pendukung pengiriman."
+        isOpen={isShipmentModalOpen}
+        maxWidth="6xl"
+        onClose={() => setIsShipmentModalOpen(false)}
+        title="Form Terbit Surat Pengiriman"
+      >
+        <div className="mb-5 flex items-center gap-3 rounded-lg bg-blue-50 p-4 text-pln-blue">
+          <Send className="h-5 w-5" />
+          <p className="text-sm font-bold">
+            Data order otomatis ditarik dari permintaan material yang sudah
+            disetujui.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[
+            ['No. Pengiriman', 'Auto Generate'],
+            ['No. Pemesanan', 'ORD/VMI/2026/0001'],
+            ['Pengirim', 'PT. PLN Nusa Daya'],
+            ['Unit Pemesan', 'UP3 Sulselrabar'],
+            ['Unit Penerima', 'ULP Makassar Timur'],
+            ['Jadwal Pengiriman', '2026-05-21'],
+            ['Estimasi Tiba', '2026-05-21'],
+            ['Kilometer Perjalanan', '18 km'],
+            ['Moda Transportasi', 'Truk Box'],
+            ['No. Plat Kendaraan', 'DD 8401 ND'],
+            ['Driver/Pengemudi', 'Irfan Saputra'],
+            ['Upload Surat Jalan', 'surat-jalan.pdf'],
+          ].map(([label, value]) => (
+            <label className="block" key={label}>
+              <span className="text-xs font-black uppercase text-pln-muted">
+                {label}
+              </span>
+              <input
+                className="focus-ring mt-2 h-10 w-full rounded-lg border border-pln-line px-3 text-sm outline-none read-only:bg-slate-50"
+                defaultValue={value}
+                readOnly={[
+                  'No. Pengiriman',
+                  'Pengirim',
+                  'Unit Pemesan',
+                  'Unit Penerima',
+                  'Kilometer Perjalanan',
+                ].includes(label)}
+              />
+            </label>
+          ))}
+        </div>
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-pln-line pt-4 sm:flex-row sm:justify-end">
+          <Button
+            onClick={() => setIsShipmentModalOpen(false)}
+            variant="secondary"
+          >
+            Batal
+          </Button>
+          <Button onClick={() => void handleIssueLetter('SJP/VMI/2026/0001')}>
+            Simpan Surat Pengiriman
+          </Button>
+        </div>
+      </Modal>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
         <Card className="p-5">

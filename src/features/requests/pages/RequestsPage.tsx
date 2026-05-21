@@ -15,6 +15,7 @@ import Swal from 'sweetalert2'
 import { z } from 'zod'
 import { Button } from '@/shared/components/Button'
 import { Card } from '@/shared/components/Card'
+import { Modal } from '@/shared/components/Modal'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import { units } from '@/shared/data/vmiData'
@@ -44,6 +45,7 @@ const ulpUnits = units.filter((unit) => unit.type === 'ULP')
 
 export const RequestsPage = () => {
   const [filter, setFilter] = useState('all')
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
   const [search, setSearch] = useState('')
   const { data = [] } = useQuery({
     queryKey: ['requests'],
@@ -119,6 +121,7 @@ export const RequestsPage = () => {
       title: 'Permintaan divalidasi',
       html: `Order ${formatNumber(values.quantity)} pcs dengan berat ${formatNumber(values.weightKg)} kg siap dikirim ke workflow approval.`,
     })
+    setIsRequestModalOpen(false)
   })
 
   const handleApprove = async (orderNo: string) => {
@@ -137,7 +140,12 @@ export const RequestsPage = () => {
             <Button icon={<Download className="h-4 w-4" />} variant="secondary">
               Export Data
             </Button>
-            <Button icon={<Plus className="h-4 w-4" />}>Tambah Permintaan</Button>
+            <Button
+              icon={<Plus className="h-4 w-4" />}
+              onClick={() => setIsRequestModalOpen(true)}
+            >
+              Tambah Permintaan
+            </Button>
           </>
         }
         description="Kelola order material dari UP3, approval PLN Pusat, auto kalkulasi berat dan harga berdasarkan harga ketentuan lokasi ULP."
@@ -209,7 +217,12 @@ export const RequestsPage = () => {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex gap-2">
-                        <button aria-label="Edit" className="rounded-lg border border-pln-line p-2 text-pln-muted">
+                        <button
+                          aria-label="Edit"
+                          className="rounded-lg border border-pln-line p-2 text-pln-muted"
+                          onClick={() => setIsRequestModalOpen(true)}
+                          type="button"
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button aria-label="Detail" className="rounded-lg border border-pln-line p-2 text-pln-muted">
@@ -238,49 +251,95 @@ export const RequestsPage = () => {
             </table>
           </div>
         </Card>
-
-        <Card className="p-5">
-          <h2 className="text-lg font-black text-pln-ink">
-            Form Tambah / Update Permintaan
-          </h2>
-          <form className="mt-5 grid gap-4" onSubmit={handleSave}>
-            <div className="grid gap-4 md:grid-cols-2">
-              <SelectField label="Unit Pemesan (UP3)" {...register('requesterUnit')}>
-                {up3Units.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.name}
-                  </option>
-                ))}
-              </SelectField>
-              <InputField label="Nama Pemesan" {...register('requesterName')} />
-              <InputField label="Alamat Unit" readOnly {...register('requesterAddress')} />
-              <InputField label="Telepon/WA" readOnly {...register('requesterPhone')} />
-              <SelectField label="Unit Penerima (ULP)" {...register('recipientUnit')}>
-                {ulpUnits.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.name}
-                  </option>
-                ))}
-              </SelectField>
-              <InputField label="Nama Penerima" {...register('recipientName')} />
-              <InputField label="Alamat Penerima" readOnly {...register('recipientAddress')} />
-              <InputField label="Telepon/WA Penerima" readOnly {...register('recipientPhone')} />
-              <InputField label="Jenis Barang" readOnly {...register('material')} />
-              <InputField label="Jumlah Barang" min={1000} type="number" {...register('quantity', { valueAsNumber: true })} />
-              <InputField label="Berat Barang (kg)" readOnly type="number" {...register('weightKg', { valueAsNumber: true })} />
-              <InputField label="Harga Barang" readOnly value={formatCurrency(watchedValues.amount || 0)} />
-              <InputField label="Upload Dokumen" placeholder="surat-permintaan.pdf" {...register('document')} />
-            </div>
-            {Object.values(errors).length > 0 ? (
-              <p className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">
-                Mohon lengkapi field wajib. Jumlah minimal 1000 pcs dan dokumen
-                wajib berupa pdf/docx/jpg/jpeg/xlsx.
-              </p>
-            ) : null}
-            <Button type="submit">Checkout Permintaan</Button>
-          </form>
-        </Card>
       </div>
+
+      <Modal
+        description="Lengkapi data pemesan, unit penerima, jumlah KWH Meter, dan dokumen surat permintaan dalam satu dialog terfokus."
+        isOpen={isRequestModalOpen}
+        maxWidth="6xl"
+        onClose={() => setIsRequestModalOpen(false)}
+        title="Form Tambah / Update Permintaan"
+      >
+        <form className="grid gap-4" onSubmit={handleSave}>
+          <div className="grid gap-4 md:grid-cols-2">
+            <SelectField label="Unit Pemesan (UP3)" {...register('requesterUnit')}>
+              {up3Units.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name}
+                </option>
+              ))}
+            </SelectField>
+            <InputField label="Nama Pemesan" {...register('requesterName')} />
+            <InputField
+              label="Alamat Unit"
+              readOnly
+              {...register('requesterAddress')}
+            />
+            <InputField
+              label="Telepon/WA"
+              readOnly
+              {...register('requesterPhone')}
+            />
+            <SelectField label="Unit Penerima (ULP)" {...register('recipientUnit')}>
+              {ulpUnits.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name}
+                </option>
+              ))}
+            </SelectField>
+            <InputField label="Nama Penerima" {...register('recipientName')} />
+            <InputField
+              label="Alamat Penerima"
+              readOnly
+              {...register('recipientAddress')}
+            />
+            <InputField
+              label="Telepon/WA Penerima"
+              readOnly
+              {...register('recipientPhone')}
+            />
+            <InputField label="Jenis Barang" readOnly {...register('material')} />
+            <InputField
+              label="Jumlah Barang"
+              min={1000}
+              type="number"
+              {...register('quantity', { valueAsNumber: true })}
+            />
+            <InputField
+              label="Berat Barang (kg)"
+              readOnly
+              type="number"
+              {...register('weightKg', { valueAsNumber: true })}
+            />
+            <InputField
+              label="Harga Barang"
+              readOnly
+              value={formatCurrency(watchedValues.amount || 0)}
+            />
+            <InputField
+              label="Upload Dokumen"
+              placeholder="surat-permintaan.pdf"
+              {...register('document')}
+            />
+          </div>
+          {Object.values(errors).length > 0 ? (
+            <p className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">
+              Mohon lengkapi field wajib. Jumlah minimal 1000 pcs dan dokumen
+              wajib berupa pdf/docx/jpg/jpeg/xlsx.
+            </p>
+          ) : null}
+          <div className="flex flex-col-reverse gap-3 border-t border-pln-line pt-4 sm:flex-row sm:justify-end">
+            <Button
+              onClick={() => setIsRequestModalOpen(false)}
+              type="button"
+              variant="secondary"
+            >
+              Batal
+            </Button>
+            <Button type="submit">Checkout Permintaan</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

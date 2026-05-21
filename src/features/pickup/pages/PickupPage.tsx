@@ -12,6 +12,7 @@ import {
 import { useMemo, useState } from 'react'
 import { Button } from '@/shared/components/Button'
 import { Card } from '@/shared/components/Card'
+import { Modal } from '@/shared/components/Modal'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { vmiService } from '@/shared/api/vmiService'
 import { formatNumber } from '@/shared/lib/format'
@@ -42,6 +43,7 @@ export const PickupPage = () => {
   const [checks, setChecks] = useState<Record<string, boolean>>(
     Object.fromEntries(checklistItems.map((item) => [item, true])),
   )
+  const [isInspectionModalOpen, setIsInspectionModalOpen] = useState(false)
   const { data = [] } = useQuery({
     queryKey: ['inspections'],
     queryFn: vmiService.getInspections,
@@ -57,7 +59,11 @@ export const PickupPage = () => {
   return (
     <div>
       <PageHeader
-        actions={<Button>Tambah Inspeksi Material</Button>}
+        actions={
+          <Button onClick={() => setIsInspectionModalOpen(true)}>
+            Tambah Inspeksi Material
+          </Button>
+        }
         description="Proses pengambilan dan inspeksi material dari pabrik menuju Gudang PLN Nusa Daya Makassar dengan template form wizard."
         title="Pengambilan Material"
       />
@@ -103,53 +109,72 @@ export const PickupPage = () => {
           </div>
         </Card>
 
-        <Card className="p-5">
-          <div className="flex flex-wrap gap-2">
-            {steps.map((step, index) => {
-              const Icon = step.icon
-              return (
-                <button
-                  className={`focus-ring flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold ${activeStep === index ? 'bg-pln-blue text-white' : 'bg-slate-100 text-pln-muted'}`}
-                  key={step.title}
-                  onClick={() => setActiveStep(index)}
-                  type="button"
-                >
-                  <Icon className="h-4 w-4" />
-                  {step.title}
-                </button>
-              )
-            })}
-          </div>
+      </div>
 
-          <div className="mt-6">
-            {activeStep === 0 ? <MaterialStep /> : null}
-            {activeStep === 1 ? (
-              <ChecklistStep checks={checks} setChecks={setChecks} />
-            ) : null}
-            {activeStep === 2 ? <PhotoStep /> : null}
-            {activeStep === 3 ? (
-              <DecisionStep ngCount={ngCount} okCount={okCount} passRate={passRate} />
-            ) : null}
-          </div>
+      <Modal
+        description="Isi data material, checklist pemeriksaan, bukti foto, dan keputusan akhir dalam wizard inspeksi."
+        isOpen={isInspectionModalOpen}
+        maxWidth="6xl"
+        onClose={() => setIsInspectionModalOpen(false)}
+        title="Form Inspeksi Pengambilan Material"
+      >
+        <div className="flex flex-wrap gap-2">
+          {steps.map((step, index) => {
+            const Icon = step.icon
+            return (
+              <button
+                className={`focus-ring flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold ${activeStep === index ? 'bg-pln-blue text-white' : 'bg-slate-100 text-pln-muted'}`}
+                key={step.title}
+                onClick={() => setActiveStep(index)}
+                type="button"
+              >
+                <Icon className="h-4 w-4" />
+                {step.title}
+              </button>
+            )
+          })}
+        </div>
 
-          <div className="mt-6 flex justify-between gap-3">
+        <div className="mt-6">
+          {activeStep === 0 ? <MaterialStep /> : null}
+          {activeStep === 1 ? (
+            <ChecklistStep checks={checks} setChecks={setChecks} />
+          ) : null}
+          {activeStep === 2 ? <PhotoStep /> : null}
+          {activeStep === 3 ? (
+            <DecisionStep ngCount={ngCount} okCount={okCount} passRate={passRate} />
+          ) : null}
+        </div>
+
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-pln-line pt-4 sm:flex-row sm:justify-between">
+          <Button
+            disabled={activeStep === 0}
+            onClick={() => setActiveStep((step) => Math.max(0, step - 1))}
+            variant="secondary"
+          >
+            Kembali
+          </Button>
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button
-              disabled={activeStep === 0}
-              onClick={() => setActiveStep((step) => Math.max(0, step - 1))}
+              onClick={() => setIsInspectionModalOpen(false)}
               variant="secondary"
             >
-              Kembali
+              Batal
             </Button>
             <Button
-              onClick={() =>
+              onClick={() => {
+                if (activeStep === steps.length - 1) {
+                  setIsInspectionModalOpen(false)
+                  return
+                }
                 setActiveStep((step) => Math.min(steps.length - 1, step + 1))
-              }
+              }}
             >
-              Lanjutkan
+              {activeStep === steps.length - 1 ? 'Simpan Inspeksi' : 'Lanjutkan'}
             </Button>
           </div>
-        </Card>
-      </div>
+        </div>
+      </Modal>
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         <Card className="p-5">
